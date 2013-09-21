@@ -1,6 +1,12 @@
 #include "viewport.h"
 
+#include <sys/time.h>
 #include <cstdio>
+
+long timediff(struct timeval* ta, struct timeval* tb)
+{
+    return (ta->tv_usec - tb->tv_usec)/1000 + 1000*(ta->tv_sec - tb->tv_sec);
+}
 
 Viewport::Viewport()
 {
@@ -22,6 +28,10 @@ Viewport::Viewport()
     mCurrentState = CALIB_INIT;
     mCurrentCorner = 0;
     imshow("display", mImgInit);
+
+    mLastScreenChange = new struct timeval;
+    mTimezone = new struct timezone;
+    getTime(mLastScreenChange);
 }    
 
 void Viewport::initCalibration()
@@ -50,6 +60,19 @@ void Viewport::toState(CalibState newState)
     mCurrentState = newState;
 }
 
+bool Viewport::requestScreenUpdate()
+{
+    struct timeval* curtime = new struct timeval;
+    getTime(curtime);
+    long elapsed = timediff(curtime,mLastScreenChange);
+    if(elapsed > SCREEN_CHANGE_DELAY)
+        mLastScreenChange = curtime;
+    else
+        delete curtime;
+    return elapsed > SCREEN_CHANGE_DELAY;
+}
+
+
 void Viewport::processCalibration(Mat orig)
 {
     Mat diff, abs, thres, colored, warpped, frame;
@@ -60,44 +83,53 @@ void Viewport::processCalibration(Mat orig)
     black[0] = black[1] = black[2] = 0;
     int x, y;
     cvtColor(orig, frame, COLOR_RGB2GRAY);
-    
-    switch(mCurrentState)
+
+    if(requestScreenUpdate())
     {
-        case CALIB_BLACK:
-            frame.copyTo(mLastBlack);
-            toState(CALIB_WHITE);
-            break;
-        case CALIB_WHITE:
-            diff = frame - mLastBlack;
-            
-            // TODO : store the centroid
-            convertScaleAbs(diff, abs);
-            threshold(abs, thres, 127, 255, 0);
+        switch(mCurrentState)
+        {
+            case CALIB_BLACK:
+                frame.copyTo(mLastBlack);
+                toState(CALIB_WHITE);
+                break;
+            case CALIB_WHITE:
+                diff = frame - mLastBlack;
+                
+                // TODO : store the centroid
+                convertScaleAbs(diff, abs);
+                threshold(abs, thres, 127, 255, 0);
 
-            m = moments(thres);
-            x = m.m10 / m.m00;
-            y = m.m01 / m.m00;
-            mVideoPoint[mCurrentCorner] = Point2f(x,y);
-            cvtColor(thres, colored, COLOR_GRAY2RGB);
-            circle(colored, Point( x, y ), 5,  CV_RGB(255,0,0), 2, 8, 0 );
-            //normalize(diff, diff_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
+                m = moments(thres);
+                x = m.m10 / m.m00;
+                y = m.m01 / m.m00;
+                mVideoPoint[mCurrentCorner] = Point2f(x,y);
+                cvtColor(thres, colored, COLOR_GRAY2RGB);
+                circle(colored, Point( x, y ), 5,  CV_RGB(255,0,0), 2, 8, 0 );
+                //normalize(diff, diff_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat() );
 
-            imshow("diff", colored);
-            
-            if(mCurrentCorner < 3)
-            {
-                mCurrentCorner++;
-                toState(CALIB_BLACK);
-            }
-            else
-            {
-                mTransform = getPerspectiveTransform(mVideoPoint, mSourcePoint); 
-                mFirstGreenOutput = true;
-                imshow("display", mImgBlack);
-                toState(CALIB_END);
-            }
-            break;
-        case CALIB_END:
+                imshow("diff", colored);
+                
+                if(mCurrentCorner < 3)
+                {
+                    mCurrentCorner++;
+                    toState(CALIB_BLACK);
+                }
+                else
+                {
+                    mTransform = getPerspectiveTransform(mVideoPoint, mSourcePoint); 
+                    mFirstGreenOutput = true;
+                    imshow("display", mImgBlack);
+                    toState(CALIB_END);
+                }
+                break;
+            case CALIB_END:
+                toState(CALIB_RUNNING);
+            default:
+                break;
+        }
+    }
+    else if(mCurrentState == CALIB_RUNNING)
+    {
             diff=orig-old_frame;
             warpPerspective(diff, warpped, mTransform, Size(800,600));
             if(mFirstGreenOutput)
@@ -112,11 +144,15 @@ void Viewport::processCalibration(Mat orig)
             orig.copyTo(old_frame);
             mFirstGreenOutput = false;
             imshow("display", greenOutput);
-            break;
-        default:
-            break;
+         
     }
+
 }
 
+
+void Viewport::getTime(struct timeval* tv)
+{
+    gettimeofday(tv, mTimezone);
+}
 
 
