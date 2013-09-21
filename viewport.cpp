@@ -78,9 +78,8 @@ void Viewport::processCalibration(Mat orig)
     Mat diff, abs, thres, colored, warpped, frame;
     Moments m;
     Vec3b green, black;
-    green[0] = 0;
+    green[0] = green[2] =0;
     green[1] = 127;
-    green[2] = 0;
     black[0] = black[1] = black[2] = 0;
     int x, y;
     cvtColor(orig, frame, COLOR_RGB2GRAY);
@@ -131,18 +130,19 @@ void Viewport::processCalibration(Mat orig)
     }
     else if(mCurrentState == CALIB_RUNNING)
     {
-        warpPerspective(orig, warpped, mTransform, Size(800,600));
+        diff=orig-old_frame;
+        warpPerspective(diff, warpped, mTransform, Size(800,600));
         if(mFirstGreenOutput)
             greenOutput = Mat(warpped.rows, warpped.cols, warpped.type());
         mFirstGreenOutput = false;
-
+         
         for(int i = 0; i < warpped.rows; i++)
             for(int j = 0; j < warpped.cols; j++)
-                if((warpped.at<Vec3b>(i,j))[0] > 200)
+                if((warpped.at<Vec3b>(i,j))[0] > 150)
                     greenOutput.at<Vec3b>(i,j) = green;
                 else if(mFirstGreenOutput)
                     greenOutput.at<Vec3b>(i,j) = black;
-
+        orig.copyTo(old_frame);
         imshow("display", greenOutput);
     }
 
