@@ -6,6 +6,8 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+#define SCREEN_CHANGE_DELAY 1000 // in milliseconds
+
 using namespace cv;
 using namespace std;
 
@@ -14,7 +16,8 @@ enum CalibState
     CALIB_INIT,
     CALIB_BLACK,
     CALIB_WHITE,
-    CALIB_END
+    CALIB_END,
+    CALIB_RUNNING
 };        
 typedef enum CalibState CalibState;
 
@@ -29,6 +32,8 @@ class Viewport
 
     private:
         void toState(CalibState newState);
+        bool requestScreenUpdate();
+        void getTime(struct timeval* tv);
 
         CalibState mCurrentState;
         int mCurrentCorner;
@@ -41,6 +46,9 @@ class Viewport
         Mat mTransform;
         bool mFirstGreenOutput;
         Mat greenOutput;
+
+        struct timeval* mLastScreenChange;
+        struct timezone* mTimezone;
 };
         
 

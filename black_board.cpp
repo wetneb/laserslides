@@ -47,7 +47,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    int cameraID = 0;
+    int cameraID = 1;
     VideoCapture inputCapture(cameraID);
 
     namedWindow("control",1);
