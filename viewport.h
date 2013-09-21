@@ -29,8 +29,9 @@ class Viewport
 
     private:
         void toState(CalibState newState);
-
+        
         CalibState mCurrentState;
+        Mat old_frame;
         int mCurrentCorner;
         Mat mLastBlack;
         Point2f mVideoPoint[4];
