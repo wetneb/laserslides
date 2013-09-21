@@ -133,7 +133,8 @@ void Viewport::processCalibration(Mat orig)
     {
         warpPerspective(orig, warpped, mTransform, Size(800,600));
         if(mFirstGreenOutput)
-            warpped.copyTo(greenOutput); // TODO resize instead
+            greenOutput = Mat(warpped.rows, warpped.cols, warpped.type());
+        mFirstGreenOutput = false;
 
         for(int i = 0; i < warpped.rows; i++)
             for(int j = 0; j < warpped.cols; j++)
@@ -141,7 +142,7 @@ void Viewport::processCalibration(Mat orig)
                     greenOutput.at<Vec3b>(i,j) = green;
                 else if(mFirstGreenOutput)
                     greenOutput.at<Vec3b>(i,j) = black;
-        mFirstGreenOutput = false;
+
         imshow("display", greenOutput);
     }
 
