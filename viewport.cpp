@@ -133,17 +133,23 @@ void Viewport::processCalibration(Mat orig)
         diff=orig-old_frame;
         warpPerspective(diff, warpped, mTransform, Size(800,600));
         if(mFirstGreenOutput)
+        {
             greenOutput = Mat(warpped.rows, warpped.cols, warpped.type());
-        mFirstGreenOutput = false;
-         
-        for(int i = 0; i < warpped.rows; i++)
-            for(int j = 0; j < warpped.cols; j++)
-                if((warpped.at<Vec3b>(i,j))[0] > 150)
-                    greenOutput.at<Vec3b>(i,j) = green;
-                else if(mFirstGreenOutput)
-                    greenOutput.at<Vec3b>(i,j) = black;
+            mFirstGreenOutput = false;
+        }
+        else
+        {
+            imshow("diff", diff);
+            imshow("warpped", warpped);
+            for(int i = 0; i < warpped.rows; i++)
+                for(int j = 0; j < warpped.cols; j++)
+                    if((warpped.at<Vec3b>(i,j))[0] > 20)
+                        greenOutput.at<Vec3b>(i,j) = green;
+                    else if(mFirstGreenOutput)
+                        greenOutput.at<Vec3b>(i,j) = black;
+            imshow("display", greenOutput);
+        }
         orig.copyTo(old_frame);
-        imshow("display", greenOutput);
     }
 
 }

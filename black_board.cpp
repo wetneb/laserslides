@@ -53,6 +53,7 @@ int main(int argc, char **argv)
     namedWindow("control",1);
     namedWindow("display",1);
     namedWindow("diff",1);
+    namedWindow("warpped",1);
 
     Viewport vp;
 
