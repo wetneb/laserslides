@@ -1,6 +1,7 @@
 Laser Tagging with auto-calibration
 =================================
 
+
 (proof of concept)
 
 Currently working when the room is very dark.

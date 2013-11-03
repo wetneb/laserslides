@@ -34,6 +34,9 @@ class Viewport
         void toState(CalibState newState);
         bool requestScreenUpdate();
         void getTime(struct timeval* tv);
+        void detectPoint(Mat rgbImage, int &x, int& y);
+
+
         CalibState mCurrentState;
         Mat old_frame;
         int mCurrentCorner;

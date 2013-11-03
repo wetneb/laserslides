@@ -72,6 +72,21 @@ bool Viewport::requestScreenUpdate()
     return elapsed > SCREEN_CHANGE_DELAY;
 }
 
+void Viewport::detectPoint(Mat rgbImage, int &x, int &y)
+{
+    Mat hsvImage;
+    cvtColor(rgbImage, hsvImage, COLOR_RGB2HSV);
+    
+    for(int i = 0; i < hsvImage.rows; i++)
+        for(int j = 0; j < hsvImage.cols; j++)
+        {
+            Vec3b curCol = hsvImage.at<Vec3b>(i,j);
+            if(curCol[0] >= 0 && curCol[0] < 60 && curCol[1] > 20)
+            {
+                x = j; y = i;
+            }
+        }
+}
 
 void Viewport::processCalibration(Mat orig)
 {
@@ -134,20 +149,16 @@ void Viewport::processCalibration(Mat orig)
         warpPerspective(diff, warpped, mTransform, Size(800,600));
         if(mFirstGreenOutput)
         {
-            greenOutput = Mat(warpped.rows, warpped.cols, warpped.type());
+            greenOutput = Mat::zeros(warpped.rows, warpped.cols, warpped.type());
             mFirstGreenOutput = false;
         }
         else
         {
             imshow("diff", diff);
+            int pointX, pointY;
+            detectPoint(warpped, pointX, pointY);
+            //circle(warpped, Point(pointX, pointY), 2, CV_RGB(0,0,255)); 
             imshow("warpped", warpped);
-            for(int i = 0; i < warpped.rows; i++)
-                for(int j = 0; j < warpped.cols; j++)
-                    if((warpped.at<Vec3b>(i,j))[0] > 20)
-                        greenOutput.at<Vec3b>(i,j) = green;
-                    else if(mFirstGreenOutput)
-                        greenOutput.at<Vec3b>(i,j) = black;
-            imshow("display", greenOutput);
         }
         orig.copyTo(old_frame);
     }
